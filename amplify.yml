@@ -16,4 +16,4 @@ applications:
         paths:
           - node_modules/**/*
           - packages/frontend/node_modules/**/*
-    appRoot: packages/frontend
+    appRoot: .

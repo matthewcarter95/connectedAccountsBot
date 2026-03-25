@@ -2,9 +2,9 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 
-export async function handleMyAccountCallback(req: Request, res: Response) {
+export async function handleMyAccountCallback(req: Request, res: Response): Promise<void> {
   try {
-    const { connect_code, auth_session, state } = req.query;
+    const { connect_code, auth_session } = req.query;
 
     if (!connect_code || !auth_session) {
       return res.redirect(`${process.env.FRONTEND_URL}?error=missing_connect_code`);

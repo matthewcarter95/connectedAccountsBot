@@ -32,7 +32,7 @@ const limiter = rateLimit({
 });
 
 // Health check endpoint (public)
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -49,7 +49,7 @@ app.use('/api/myaccount', validateJWT, myaccountRoutes);
 app.use(handleJWTError);
 
 // Global error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
     error: 'Internal server error',

@@ -26,15 +26,16 @@ export const validateJWT = expressjwt({
  */
 export const handleJWTError = (
   err: any,
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   if (err.name === 'UnauthorizedError') {
-    return res.status(401).json({
+    res.status(401).json({
       error: 'Invalid token',
       message: err.message,
     });
+    return;
   }
   next(err);
 };

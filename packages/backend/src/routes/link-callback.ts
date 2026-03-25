@@ -1,9 +1,8 @@
 // Public callback handler for account linking (no JWT required)
 import { Request, Response } from 'express';
 import axios from 'axios';
-import { authService } from '../services/authService.js';
 
-export async function handleLinkCallback(req: Request, res: Response) {
+export async function handleLinkCallback(req: Request, res: Response): Promise<void> {
   try {
     const { code, state } = req.query;
 

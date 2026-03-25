@@ -1,8 +1,6 @@
 // MyAccount API routes for Connected Accounts
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
-import { extractUserId } from '../middleware/auth.js';
-import { authService } from '../services/authService.js';
 
 const router = Router();
 
@@ -15,11 +13,13 @@ router.post('/connect', async (req: Request, res: Response) => {
     const { connection, myAccountToken } = req.body;
 
     if (!connection) {
-      return res.status(400).json({ error: 'Connection name required' });
+      res.status(400).json({ error: 'Connection name required' });
+      return;
     }
 
     if (!myAccountToken) {
-      return res.status(400).json({ error: 'MyAccount token required' });
+      res.status(400).json({ error: 'MyAccount token required' });
+      return;
     }
 
     const domain = process.env.AUTH0_DOMAIN;

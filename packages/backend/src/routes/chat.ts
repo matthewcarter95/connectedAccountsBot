@@ -20,10 +20,11 @@ router.post('/message', async (req: Request, res: Response) => {
     // Validate request body
     const validation = chatMessageSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Invalid request',
         details: validation.error.errors,
       });
+      return;
     }
 
     const { prompt } = validation.data;
@@ -37,10 +38,11 @@ router.post('/message', async (req: Request, res: Response) => {
     console.error('Chat message error:', error);
 
     if (error.message.includes('not connected')) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Account not connected',
         message: error.message,
       });
+      return;
     }
 
     res.status(500).json({

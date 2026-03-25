@@ -38,7 +38,7 @@ export class AuthService {
     // Set expiry to 5 minutes before actual expiry
     this.managementTokenExpiry = Date.now() + (response.data.expires_in - 300) * 1000;
 
-    return this.managementToken;
+    return this.managementToken!;
   }
 
   /**

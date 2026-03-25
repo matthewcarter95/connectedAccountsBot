@@ -16,7 +16,8 @@ router.post('/callback', async (req: Request, res: Response) => {
     const primaryUserId = extractUserId(req);
 
     if (!code || !connection) {
-      return res.status(400).json({ error: 'Missing code or connection' });
+      res.status(400).json({ error: 'Missing code or connection' });
+      return;
     }
 
     // Exchange code for tokens
