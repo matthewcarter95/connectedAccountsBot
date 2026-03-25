@@ -1,0 +1,64 @@
+// Prisma schema for Connected Accounts Bot
+// Database: Supabase PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  auth0Id   String   @unique @map("auth0_id")
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  connectedAccounts ConnectedAccount[]
+  chatMessages      ChatMessage[]
+
+  @@map("users")
+}
+
+model ConnectedAccount {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  provider     String   // "google" or "discord"
+  providerUserId String @map("provider_user_id")
+  email        String?  // For Google
+  username     String?  // For Discord
+  connectionId String   @map("connection_id") // Auth0 connection ID
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@map("connected_accounts")
+}
+
+model ChatMessage {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  prompt           String
+  emailsFound      Int      @default(0) @map("emails_found")
+  emailsSent       Int      @default(0) @map("emails_sent")
+  discordMessageId String?  @map("discord_message_id")
+  status           String   @default("pending") // pending, processing, completed, failed
+  errorMessage     String?  @map("error_message")
+  processingTimeMs Int?     @map("processing_time_ms")
+  tokensUsed       Int?     @map("tokens_used")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
