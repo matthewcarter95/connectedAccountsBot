@@ -21,51 +21,23 @@ export const ConnectionStatus = () => {
         },
       });
 
-      // Get MyAccount API token (with explicit scope override)
+      // Get MyAccount API token - use popup directly since we need a new audience
       let myAccountToken;
+
+      console.log('Requesting MyAccount API token via popup...');
       try {
-        myAccountToken = await getAccessTokenSilently({
-          cacheMode: 'off', // Don't merge with cached default scopes
+        // Use getAccessTokenWithPopup to handle both consent and token retrieval
+        myAccountToken = await getAccessTokenWithPopup({
+          cacheMode: 'off',
           authorizationParams: {
             audience: `https://${import.meta.env.VITE_AUTH0_DOMAIN}/me/`,
             scope: 'openid profile email create:me:connected_accounts read:me:connected_accounts',
           },
         });
-      } catch (tokenError: any) {
-        // If consent or login required, use popup to avoid losing session
-        if (tokenError.error === 'consent_required' || tokenError.error === 'login_required') {
-          console.log(`${tokenError.error} for MyAccount API, opening popup...`);
-          console.log('Full error:', tokenError);
-          try {
-            console.log('Opening popup for MyAccount API consent...');
-
-            // Use loginWithPopup WITHOUT connection parameter to leverage SSO
-            // This will use the existing Auth0 session instead of re-authenticating
-            await loginWithPopup({
-              authorizationParams: {
-                audience: `https://${import.meta.env.VITE_AUTH0_DOMAIN}/me/`,
-                scope: 'openid profile email create:me:connected_accounts read:me:connected_accounts',
-                // Don't specify connection - let Auth0 use SSO from existing session
-              },
-            });
-
-            // After popup login with consent, get the token
-            myAccountToken = await getAccessTokenSilently({
-              cacheMode: 'off', // Don't merge with cached default scopes
-              authorizationParams: {
-                audience: `https://${import.meta.env.VITE_AUTH0_DOMAIN}/me/`,
-                scope: 'openid profile email create:me:connected_accounts read:me:connected_accounts',
-              },
-            });
-            console.log('Got MyAccount token after consent popup');
-          } catch (popupError) {
-            console.error('Popup authentication failed:', popupError);
-            throw popupError;
-          }
-        } else {
-          console.error('Unexpected token error:', tokenError);
-          throw tokenError;
-        }
+        console.log('Got MyAccount token via popup');
+      } catch (popupError: any) {
+        console.error('Failed to get MyAccount token:', popupError);
+        throw new Error('Failed to authorize MyAccount API access');
       }
 
       // Call backend to initiate connected account flow
@@ -126,7 +98,7 @@ export const ConnectionStatus = () => {
         </div>
         {!status?.google.connected && (
           <button
-            onClick={() => handleConnectAccount('google-oauth2')}
+            onClick={() => handleConnectAccount('con_p3HmN6oT3FhZGMjj')}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
           >
             Connect Google
@@ -147,7 +119,7 @@ export const ConnectionStatus = () => {
         </div>
         {!status?.discord.connected && (
           <button
-            onClick={() => handleConnectAccount('discord')}
+            onClick={() => handleConnectAccount('con_UXrhMQXmNl8SvVUI')}
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
           >
             Connect Discord

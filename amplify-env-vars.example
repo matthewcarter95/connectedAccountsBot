@@ -1,0 +1,19 @@
+# AWS Amplify Environment Variables
+# Add these in the Amplify Console: App Settings → Environment variables
+
+# Auth0 Configuration
+VITE_AUTH0_DOMAIN=your-tenant.auth0.com
+VITE_AUTH0_CLIENT_ID=your-auth0-client-id
+VITE_AUTH0_AUDIENCE=https://your-api-audience
+VITE_AUTH0_REDIRECT_URI=https://your-app-url.amplifyapp.com
+
+# Supabase Configuration
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-supabase-anon-key
+
+# Backend API URL
+# Update this after deploying your backend
+VITE_API_BASE_URL=https://your-backend-api-url.com
+
+# Note: In Amplify Console, don't include quotes around values
+# Just enter the value directly: your-tenant.auth0.com
