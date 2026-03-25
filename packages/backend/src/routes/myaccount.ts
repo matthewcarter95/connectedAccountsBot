@@ -30,7 +30,7 @@ router.post('/connect', async (req: Request, res: Response) => {
 
     // Call Auth0 MyAccount API to initiate connected account
     const myAccountResponse = await axios.post(
-      `https://${domain}/api/v2/me/connected-accounts`,
+      `https://${domain}/me/connected-accounts`,
       {
         connection_id: connection,
         redirect_uri: `${frontendUrl}/myaccount-callback`,
