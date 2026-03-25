@@ -7,7 +7,7 @@ import { ChatInterface } from './components/Chat/ChatInterface';
 import { setAuthToken } from './services/api';
 
 function App() {
-  const { isAuthenticated, isLoading, user, getAccessTokenSilently, loginWithRedirect } = useAuth0();
+  const { isAuthenticated, isLoading, user, getAccessTokenSilently } = useAuth0();
 
   // Handle MyAccount callback (from OAuth redirect)
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { getAccountStatus } from '../../services/api';
 
 export const ConnectionStatus = () => {
-  const { getAccessTokenSilently, getAccessTokenWithPopup, loginWithPopup, user } = useAuth0();
+  const { getAccessTokenSilently, getAccessTokenWithPopup } = useAuth0();
 
   const { data: status, isLoading, error } = useQuery({
     queryKey: ['accountStatus'],

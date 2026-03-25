@@ -17,7 +17,6 @@ const queryClient = new QueryClient({
 const domain = import.meta.env.VITE_AUTH0_DOMAIN;
 const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
 const redirectUri = import.meta.env.VITE_AUTH0_REDIRECT_URI;
-const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
