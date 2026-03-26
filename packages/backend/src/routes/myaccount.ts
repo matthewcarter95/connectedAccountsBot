@@ -24,17 +24,22 @@ router.post('/connect', async (req: Request, res: Response) => {
 
     const domain = process.env.AUTH0_DOMAIN;
     const frontendUrl = process.env.FRONTEND_URL;
+    const url = `https://${domain}/me/connected-accounts`;
+
+    const requestBody = {
+      connection_id: connection,
+      redirect_uri: `${frontendUrl}/myaccount-callback`,
+    };
 
     console.log('Initiating Connected Account flow for:', connection);
     console.log('Using MyAccount token of length:', myAccountToken?.length);
+    console.log('Making POST request to:', url);
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
     // Call Auth0 MyAccount API to initiate connected account
     const myAccountResponse = await axios.post(
-      `https://${domain}/me/connected-accounts`,
-      {
-        connection_id: connection,
-        redirect_uri: `${frontendUrl}/myaccount-callback`,
-      },
+      url,
+      requestBody,
       {
         headers: {
           Authorization: `Bearer ${myAccountToken}`,
@@ -51,7 +56,12 @@ router.post('/connect', async (req: Request, res: Response) => {
       authSession: myAccountResponse.data.auth_session,
     });
   } catch (error: any) {
-    console.error('MyAccount connect error:', error.response?.data || error.message);
+    console.error('MyAccount connect error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
     res.status(500).json({
       error: 'Failed to initiate connected account',
       message: error.response?.data?.message || error.message,
