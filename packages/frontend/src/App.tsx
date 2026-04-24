@@ -32,7 +32,8 @@ function App() {
           const token = await getAccessTokenSilently({
             authorizationParams: {
               audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-              scope: 'openid profile email read:messages write:messages read:connections',
+              // Include offline_access to enable refresh token usage
+              scope: 'openid profile email offline_access read:messages write:messages read:connections',
             },
           });
           setAuthToken(token);

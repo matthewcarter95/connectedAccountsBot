@@ -17,6 +17,7 @@ export interface ConnectedAccountToken {
   accessToken: string;
   refreshToken?: string;
   expiresAt?: number;
+  scopes?: string[];
 }
 
 export interface GmailSearchParams {

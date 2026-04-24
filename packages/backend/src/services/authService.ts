@@ -1,6 +1,10 @@
 // Auth0 token management service
+// Supports both Management API (legacy) and Federated Token Exchange (preferred)
+// Reference: https://github.com/deepu105/auth0-token-vault-cli/tree/main/src/auth
 import axios from 'axios';
 import { ConnectedAccountToken } from '../types/index.js';
+import { tokenExchangeService, TokenExchangeError } from './tokenExchangeService.js';
+import { refreshTokenService } from './refreshTokenService.js';
 
 export class AuthService {
   private auth0Domain: string;
@@ -9,10 +13,15 @@ export class AuthService {
   private managementToken: string | null = null;
   private managementTokenExpiry: number = 0;
 
+  // Feature flag: use Federated Token Exchange instead of Management API
+  private useFederatedTokenExchange: boolean;
+
   constructor() {
     this.auth0Domain = process.env.AUTH0_DOMAIN!;
     this.clientId = process.env.AUTH0_API_CLIENT_ID!;
     this.clientSecret = process.env.AUTH0_API_CLIENT_SECRET!;
+    // Enable Federated Token Exchange by default, can be disabled via env var
+    this.useFederatedTokenExchange = process.env.USE_FEDERATED_TOKEN_EXCHANGE !== 'false';
   }
 
   /**
@@ -42,9 +51,81 @@ export class AuthService {
   }
 
   /**
+   * Get user's connected account token using Federated Token Exchange
+   * This is the preferred method as it gets fresh tokens directly from the IdP
+   */
+  private async getUserTokenViaFederatedExchange(
+    auth0UserId: string,
+    connection: string
+  ): Promise<ConnectedAccountToken | null> {
+    try {
+      // Get the user's stored refresh token
+      const refreshToken = await refreshTokenService.getRefreshToken(auth0UserId);
+
+      if (!refreshToken) {
+        console.log(`No refresh token found for user ${auth0UserId}, falling back to Management API`);
+        return null;
+      }
+
+      // Exchange for connection-specific access token
+      const result = await tokenExchangeService.exchangeForConnectionToken(
+        refreshToken,
+        connection,
+        auth0UserId
+      );
+
+      const provider = connection === 'google-oauth2' ? 'google' : 'discord';
+
+      return {
+        provider,
+        accessToken: result.accessToken,
+        expiresAt: result.expiresAt,
+      };
+    } catch (error) {
+      if (error instanceof TokenExchangeError) {
+        console.error(`Federated Token Exchange failed for ${connection}:`, error.message, `(code: ${error.code})`);
+
+        // If auth is required, the user needs to re-login with offline_access
+        if (error.code === 'AUTH_REQUIRED') {
+          console.log('User needs to re-authenticate with offline_access scope');
+        }
+        // If authz is required, the user needs to connect/re-connect the account
+        if (error.code === 'AUTHZ_REQUIRED') {
+          console.log('User needs to connect or re-authorize the account');
+        }
+      } else {
+        console.error(`Unexpected error in Federated Token Exchange:`, error);
+      }
+      return null;
+    }
+  }
+
+  /**
    * Get user's connected account token for a specific provider
+   * Uses Federated Token Exchange if available, falls back to Management API
    */
   async getUserToken(
+    auth0UserId: string,
+    provider: 'google-oauth2' | 'discord'
+  ): Promise<ConnectedAccountToken | null> {
+    // Try Federated Token Exchange first if enabled
+    if (this.useFederatedTokenExchange) {
+      const connection = provider === 'discord' ? 'discord' : 'google-oauth2';
+      const token = await this.getUserTokenViaFederatedExchange(auth0UserId, connection);
+      if (token) {
+        return token;
+      }
+      console.log(`Federated Token Exchange failed for ${provider}, falling back to Management API`);
+    }
+
+    // Fallback to Management API
+    return this.getUserTokenViaManagementAPI(auth0UserId, provider);
+  }
+
+  /**
+   * Get user's connected account token via Management API (legacy method)
+   */
+  private async getUserTokenViaManagementAPI(
     auth0UserId: string,
     provider: 'google-oauth2' | 'discord'
   ): Promise<ConnectedAccountToken | null> {
@@ -86,7 +167,7 @@ export class AuthService {
         return null;
       }
 
-      console.log(`Found ${provider} token for user`);
+      console.log(`Found ${provider} token for user via Management API`);
       return {
         provider: provider === 'google-oauth2' ? 'google' : 'discord',
         accessToken: identity.access_token,
@@ -172,6 +253,21 @@ export class AuthService {
       console.error('Failed to link accounts:', error.response?.data || error);
       throw new Error(`Account linking failed: ${error.response?.data?.message || error.message}`);
     }
+  }
+
+  /**
+   * Store refresh token for a user (call this after initial login)
+   */
+  async storeRefreshToken(auth0UserId: string, refreshToken: string, expiresAt?: Date): Promise<void> {
+    await refreshTokenService.saveRefreshToken(auth0UserId, refreshToken, expiresAt);
+  }
+
+  /**
+   * Clear cached tokens for a user (call on logout)
+   */
+  async clearUserTokens(auth0UserId: string): Promise<void> {
+    await refreshTokenService.deleteRefreshToken(auth0UserId);
+    tokenExchangeService.clearCache(auth0UserId);
   }
 }
 

@@ -21,6 +21,7 @@ model User {
   // Relationships
   connectedAccounts ConnectedAccount[]
   chatMessages      ChatMessage[]
+  authTokens        UserAuthToken[]
 
   @@map("users")
 }
@@ -61,4 +62,21 @@ model ChatMessage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
+}
+
+// Stores Auth0 refresh tokens for Federated Token Exchange
+// Required for exchanging Auth0 tokens for IdP access tokens (Google, Discord)
+model UserAuthToken {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  refreshToken String   @map("refresh_token") // Auth0 refresh token (encrypted in production)
+  expiresAt    DateTime? @map("expires_at")   // Token expiration if known
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@map("user_auth_tokens")
 }

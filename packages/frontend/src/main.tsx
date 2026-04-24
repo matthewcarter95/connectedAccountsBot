@@ -28,6 +28,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         // Don't set default audience or scope - specify them per request
         // This prevents scope merging issues when requesting different audiences
       }}
+      // Enable refresh tokens for Federated Token Exchange support
+      // This allows the backend to use refresh tokens for token exchange
+      useRefreshTokens={true}
+      // Cache tokens in local storage to persist across page refreshes
+      cacheLocation="localstorage"
     >
       <QueryClientProvider client={queryClient}>
         <App />

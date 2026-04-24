@@ -8,6 +8,7 @@ import { validateJWT, handleJWTError } from './middleware/auth.js';
 import chatRoutes from './routes/chat.js';
 import accountsRoutes from './routes/accounts.js';
 import myaccountRoutes from './routes/myaccount.js';
+import authRoutes from './routes/auth.js';
 import { handleLinkCallback } from './routes/link-callback.js';
 import { handleMyAccountCallback } from './routes/myaccount-callback.js';
 
@@ -41,6 +42,7 @@ app.get('/api/myaccount/link-callback', handleLinkCallback); // Legacy identity 
 app.get('/api/myaccount/callback', handleMyAccountCallback); // MyAccount Connected Accounts callback
 
 // Protected routes (require JWT)
+app.use('/api/auth', validateJWT, authRoutes);
 app.use('/api/chat', validateJWT, limiter, chatRoutes);
 app.use('/api/accounts', validateJWT, accountsRoutes);
 app.use('/api/myaccount', validateJWT, myaccountRoutes);

@@ -79,3 +79,30 @@ export const getAccountStatus = async (): Promise<AccountStatus> => {
   const response = await apiClient.get<AccountStatus>('/api/accounts/status');
   return response.data;
 };
+
+/**
+ * Store refresh token for Federated Token Exchange
+ * Note: This requires the frontend to have access to the refresh token,
+ * which depends on Auth0 configuration
+ */
+export const storeRefreshToken = async (refreshToken: string): Promise<void> => {
+  await apiClient.post('/api/auth/refresh-token', { refreshToken });
+};
+
+/**
+ * Clear stored tokens (call on logout)
+ */
+export const clearStoredTokens = async (): Promise<void> => {
+  await apiClient.delete('/api/auth/refresh-token');
+};
+
+/**
+ * Get token storage status
+ */
+export const getTokenStatus = async (): Promise<{
+  hasRefreshToken: boolean;
+  federatedTokenExchangeEnabled: boolean;
+}> => {
+  const response = await apiClient.get('/api/auth/token-status');
+  return response.data;
+};
