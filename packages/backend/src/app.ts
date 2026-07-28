@@ -15,6 +15,9 @@ import { handleMyAccountCallback } from './routes/myaccount-callback.js';
 const app = express();
 const port = process.env.PORT || 3001;
 
+// Trust the load balancer's X-Forwarded-For header (required for App Runner / any reverse proxy)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
