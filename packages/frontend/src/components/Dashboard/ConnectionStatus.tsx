@@ -88,17 +88,17 @@ export const ConnectionStatus = () => {
       {/* Google Connection */}
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
         <div className="flex items-center space-x-3">
-          <div className={`w-3 h-3 rounded-full ${status?.google.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+          <div className={`w-3 h-3 rounded-full ${status?.google?.connected ? 'bg-green-500' : 'bg-red-500'}`} />
           <div>
             <h3 className="font-semibold">Google / Gmail</h3>
-            {status?.google.email && (
-              <p className="text-sm text-gray-600">{status.google.email}</p>
+            {status?.google?.email && (
+              <p className="text-sm text-gray-600">{status?.google?.email}</p>
             )}
           </div>
         </div>
-        {!status?.google.connected && (
+        {!status?.google?.connected && (
           <button
-            onClick={() => handleConnectAccount('con_p3HmN6oT3FhZGMjj')}
+            onClick={() => handleConnectAccount('google-oauth2')}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
           >
             Connect Google
@@ -109,17 +109,17 @@ export const ConnectionStatus = () => {
       {/* Discord Connection */}
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
         <div className="flex items-center space-x-3">
-          <div className={`w-3 h-3 rounded-full ${status?.discord.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+          <div className={`w-3 h-3 rounded-full ${status?.discord?.connected ? 'bg-green-500' : 'bg-red-500'}`} />
           <div>
             <h3 className="font-semibold">Discord</h3>
-            {status?.discord.username && (
-              <p className="text-sm text-gray-600">{status.discord.username}</p>
+            {status?.discord?.username && (
+              <p className="text-sm text-gray-600">{status?.discord?.username}</p>
             )}
           </div>
         </div>
-        {!status?.discord.connected && (
+        {!status?.discord?.connected && (
           <button
-            onClick={() => handleConnectAccount('con_UXrhMQXmNl8SvVUI')}
+            onClick={() => handleConnectAccount('discord')}
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-sm"
           >
             Connect Discord
@@ -127,7 +127,7 @@ export const ConnectionStatus = () => {
         )}
       </div>
 
-      {status?.google.connected && status?.discord.connected && (
+      {status?.google?.connected && status?.discord?.connected && (
         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-green-800 font-semibold">All accounts connected!</p>
           <p className="text-green-700 text-sm mt-1">You can now use the chat interface to search Gmail.</p>

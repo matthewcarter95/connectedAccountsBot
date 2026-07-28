@@ -69,7 +69,7 @@ export const getChatHistory = async (
   const response = await apiClient.get<ChatHistoryItem[]>('/api/chat/history', {
     params: { limit },
   });
-  return response.data;
+  return Array.isArray(response.data) ? response.data : [];
 };
 
 /**
@@ -77,7 +77,11 @@ export const getChatHistory = async (
  */
 export const getAccountStatus = async (): Promise<AccountStatus> => {
   const response = await apiClient.get<AccountStatus>('/api/accounts/status');
-  return response.data;
+  const data = response.data;
+  return {
+    google: data?.google ?? { connected: false },
+    discord: data?.discord ?? { connected: false },
+  };
 };
 
 /**

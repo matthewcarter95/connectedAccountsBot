@@ -4,7 +4,7 @@ import { LoginButton } from './components/Auth/LoginButton';
 import { LogoutButton } from './components/Auth/LogoutButton';
 import { ConnectionStatus } from './components/Dashboard/ConnectionStatus';
 import { ChatInterface } from './components/Chat/ChatInterface';
-import { setAuthToken } from './services/api';
+import { setAuthToken, storeRefreshToken } from './services/api';
 
 function App() {
   const { isAuthenticated, isLoading, user, getAccessTokenSilently } = useAuth0();
@@ -37,6 +37,29 @@ function App() {
             },
           });
           setAuthToken(token);
+
+          // Extract refresh token from Auth0 SDK's localStorage cache so the backend
+          // can use it for Federated Token Exchange (getting IdP tokens for connected accounts).
+          // The Auth0 SPA SDK with cacheLocation='localstorage' stores tokens under
+          // keys prefixed with @@auth0spajs@@.
+          try {
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key?.startsWith('@@auth0spajs@@')) {
+                const cached = localStorage.getItem(key);
+                if (cached) {
+                  const parsed = JSON.parse(cached);
+                  const refreshToken = parsed?.body?.refresh_token;
+                  if (refreshToken) {
+                    await storeRefreshToken(refreshToken);
+                    break;
+                  }
+                }
+              }
+            }
+          } catch {
+            // Refresh token storage is best-effort; FTE will degrade gracefully without it
+          }
         } catch (error) {
           console.error('Failed to get access token:', error);
         }

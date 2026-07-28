@@ -1,0 +1,60 @@
+function getUser(email, callback) {
+  const request = require('request');
+
+  // 1. Ensure you save your Okta Domain and SSWS Token in Auth0 Settings > Configuration
+  const oktaDomain = configuration.OKTA_DOMAIN; // e.g., 'demo-lmco-ciam-demo.okta.com'
+  const oktaApiToken = configuration.OKTA_API_TOKEN; // Your Okta SSWS Token
+
+  if (!oktaDomain || !oktaApiToken) {
+    return callback(new Error('Okta configuration is missing in Auth0.'));
+  }
+
+  const options = {
+    // We filter by profile.login or profile.email matching the incoming email
+    url: `https://${oktaDomain}/api/v1/users?filter=profile.login eq "${email}" or profile.email eq "${email}"`,
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `SSWS ${oktaApiToken}`
+    },
+    json: true
+  };
+
+  request(options, function(err, response, body) {
+    if (err) {
+      return callback(err);
+    }
+
+    if (response.statusCode !== 200) {
+      return callback(new Error(`Okta API error: Status ${response.statusCode}`));
+    }
+
+    // Okta returns an array for search queries
+    if (!Array.isArray(body) || body.length === 0) {
+      // User not found in Okta: Return null for both error and profile. 
+      // This tells Auth0 "This user doesn't exist here, handle them as a fresh signup."
+      return callback(null, null);
+    }
+
+    // Grab the first matching user found
+    const user = body[0];
+    
+    // Check user status (Optional, but safe: skip users who are deleted/deprovisioned)
+    if (user.status === 'DEPROVISIONED') {
+      return callback(null, null);
+    }
+
+    // Defensive mapping mirroring your Login script structure
+    const mappedEmail = user.profile.email || user.profile.login;
+
+    const profile = {
+      user_id: user.id,
+      email: mappedEmail,
+      name: `${user.profile.firstName || ''} ${user.profile.lastName || ''}`.trim() || mappedEmail,
+      email_verified: user.status === 'ACTIVE' // Maps active directory standing to verified status
+    };
+
+    return callback(null, profile);
+  });
+}
