@@ -3,6 +3,7 @@
 // Based on: https://github.com/deepu105/auth0-token-vault-cli/tree/main/src/auth
 
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 
 // Auth0 Federated Token Exchange constants
 const GRANT_TYPE = 'urn:auth0:params:oauth:grant-type:token-exchange:federated-connection-access-token';
@@ -231,7 +232,7 @@ export class TokenExchangeService {
         {
           connection,
           redirect_uri: redirectUri,
-          state: state || crypto.randomUUID(),
+          state: state || randomUUID(),
           // Only include scopes when non-empty - the API rejects an empty array
           ...(scopes.length > 0 ? { scopes } : {}),
         },

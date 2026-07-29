@@ -1,53 +1,15 @@
-// JWT validation middleware using Auth0
-import { expressjwt, GetVerificationKey } from 'express-jwt';
-import jwksRsa from 'jwks-rsa';
-import { Request, Response, NextFunction } from 'express';
-
-const auth0Domain = process.env.AUTH0_DOMAIN!;
-const audience = process.env.AUTH0_AUDIENCE!;
+// Session-based auth helpers — replaces the old JWT middleware.
+// express-openid-connect (mounted in app.ts) handles the OIDC flow and
+// populates req.oidc on every request.
+import { Request } from 'express';
 
 /**
- * Validate JWT token from Auth0
- */
-export const validateJWT = expressjwt({
-  secret: jwksRsa.expressJwtSecret({
-    cache: true,
-    rateLimit: true,
-    jwksRequestsPerMinute: 5,
-    jwksUri: `https://${auth0Domain}/.well-known/jwks.json`,
-  }) as GetVerificationKey,
-  audience,
-  issuer: `https://${auth0Domain}/`,
-  algorithms: ['RS256'],
-});
-
-/**
- * Error handler for JWT validation errors
- */
-export const handleJWTError = (
-  err: any,
-  _req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  if (err.name === 'UnauthorizedError') {
-    res.status(401).json({
-      error: 'Invalid token',
-      message: err.message,
-    });
-    return;
-  }
-  next(err);
-};
-
-/**
- * Extract Auth0 user ID from validated JWT
+ * Extract the Auth0 user ID (sub claim) from the OIDC session.
+ * Throws if the request is not authenticated — only call on routes
+ * already protected by the requireAuth middleware in app.ts.
  */
 export const extractUserId = (req: Request): string => {
-  // After JWT validation, the payload is in req.auth
-  const auth = (req as any).auth;
-  if (!auth || !auth.sub) {
-    throw new Error('User ID not found in token');
-  }
-  return auth.sub;
+  const sub = (req as any).oidc?.user?.sub;
+  if (!sub) throw new Error('User not authenticated');
+  return sub;
 };

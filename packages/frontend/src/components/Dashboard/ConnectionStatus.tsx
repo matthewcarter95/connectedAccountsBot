@@ -1,68 +1,32 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth0 } from '@auth0/auth0-react';
 import { getAccountStatus } from '../../services/api';
 
 export const ConnectionStatus = () => {
-  const { getAccessTokenSilently, getAccessTokenWithPopup } = useAuth0();
-
   const { data: status, isLoading, error } = useQuery({
     queryKey: ['accountStatus'],
     queryFn: getAccountStatus,
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 10000,
   });
 
   const handleConnectAccount = async (connection: string) => {
     try {
-      // Get backend API token for authentication
-      const backendToken = await getAccessTokenSilently({
-        authorizationParams: {
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-          scope: 'openid profile email read:messages write:messages read:connections',
-        },
-      });
-
-      // Get MyAccount API token - use popup directly since we need a new audience
-      let myAccountToken;
-
-      console.log('Requesting MyAccount API token via popup...');
-      try {
-        // Use getAccessTokenWithPopup to handle both consent and token retrieval
-        myAccountToken = await getAccessTokenWithPopup({
-          cacheMode: 'off',
-          authorizationParams: {
-            audience: `https://${import.meta.env.VITE_AUTH0_DOMAIN}/me/`,
-            scope: 'openid profile email create:me:connected_accounts read:me:connected_accounts',
-          },
-        });
-        console.log('Got MyAccount token via popup');
-      } catch (popupError: any) {
-        console.error('Failed to get MyAccount token:', popupError);
-        throw new Error('Failed to authorize MyAccount API access');
-      }
-
-      // Call backend to initiate connected account flow
-      // Send backend token for auth, MyAccount token in body
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/myaccount/connect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${backendToken}`,
-        },
-        body: JSON.stringify({
-          connection,
-          myAccountToken,
-        }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/myaccount/connect`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ connection }),
+        }
+      );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to initiate connection');
+        const err = await response.json();
+        throw new Error(err.message || 'Failed to initiate connection');
       }
 
       const data = await response.json();
-
       if (data.authorizationUrl) {
-        // Redirect to the OAuth authorization URL
         window.location.href = data.authorizationUrl;
       } else {
         throw new Error('No authorization URL returned');
@@ -73,13 +37,8 @@ export const ConnectionStatus = () => {
     }
   };
 
-  if (isLoading) {
-    return <div className="text-gray-500">Loading connection status...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-500">Failed to load connection status</div>;
-  }
+  if (isLoading) return <div className="text-gray-500">Loading connection status...</div>;
+  if (error) return <div className="text-red-500">Failed to load connection status</div>;
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 space-y-4">

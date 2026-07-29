@@ -3,10 +3,11 @@
 // Reference: https://github.com/deepu105/auth0-token-vault-cli/tree/main/src/auth
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { getPendingConnect, deletePendingConnect } from '../lib/pendingConnects.js';
 
 export async function handleMyAccountCallback(req: Request, res: Response): Promise<void> {
   try {
-    const { connect_code, auth_session, state, error, error_description } = req.query;
+    const { connect_code, state, error, error_description } = req.query;
 
     // Handle OAuth errors from Auth0
     if (error) {
@@ -16,33 +17,39 @@ export async function handleMyAccountCallback(req: Request, res: Response): Prom
       return;
     }
 
-    if (!connect_code || !auth_session) {
-      console.error('MyAccount callback missing required parameters:', { connect_code: !!connect_code, auth_session: !!auth_session });
-      res.redirect(`${process.env.FRONTEND_URL}?error=missing_connect_code`);
+    if (!connect_code || !state) {
+      console.error('MyAccount callback missing required parameters:', { connect_code: !!connect_code, state: !!state });
+      res.redirect(`${process.env.FRONTEND_URL}?connect=error&message=missing_connect_code`);
       return;
     }
 
-    const domain = process.env.AUTH0_DOMAIN;
-    const frontendUrl = process.env.FRONTEND_URL;
-    const redirectUri = `${frontendUrl}/myaccount-callback`;
+    // Look up auth_session + myAccountToken stored in DynamoDB during the connect call.
+    const pending = await getPendingConnect(state as string);
+    if (!pending) {
+      console.error('MyAccount callback: no pending connect found for state', state);
+      res.redirect(`${process.env.FRONTEND_URL}?connect=error&message=session_expired`);
+      return;
+    }
+    await deletePendingConnect(state as string);
+    const { authSession, connection, myAccountToken } = pending;
 
-    console.log('MyAccount callback - connect_code:', connect_code);
-    console.log('auth_session:', auth_session);
+    const domain = process.env.AUTH0_DOMAIN;
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+    const redirectUri = `${backendUrl}/api/myaccount/callback`;
+
+    console.log('MyAccount callback - connect_code received, completing flow for connection:', connection);
     console.log('state:', state);
 
-    // Complete the connected account using MyAccount API v1 endpoint
-    // Note: The complete endpoint requires a MyAccount token with appropriate scopes
-    // Since this is a public callback, we need to use the auth_session which was
-    // created during the initiate phase and contains the necessary authorization
     const completeResponse = await axios.post(
       `https://${domain}/me/v1/connected-accounts/complete`,
       {
         connect_code: connect_code,
-        auth_session: auth_session,
+        auth_session: authSession,
         redirect_uri: redirectUri,
       },
       {
         headers: {
+          Authorization: `Bearer ${myAccountToken}`,
           'Content-Type': 'application/json',
         },
       }
@@ -50,10 +57,10 @@ export async function handleMyAccountCallback(req: Request, res: Response): Prom
 
     console.log('Connected account completed:', completeResponse.status, completeResponse.data);
 
-    const { id, connection, scopes } = completeResponse.data;
+    const { id, scopes } = completeResponse.data;
     console.log(`Successfully connected account: id=${id}, connection=${connection}, scopes=${scopes?.join(', ')}`);
 
-    // Redirect back to frontend with success
+    // Redirect back to frontend — the frontend's App.tsx watches for ?connect=success
     res.redirect(`${process.env.FRONTEND_URL}?connect=success&connection=${encodeURIComponent(connection || '')}`);
   } catch (error: any) {
     console.error('MyAccount callback error:', {
