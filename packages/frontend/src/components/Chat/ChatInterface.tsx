@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendChatMessage, getChatHistory } from '../../services/api';
-import { supabase } from '../../lib/supabaseClient';
-import { useAuth0 } from '@auth0/auth0-react';
 
 interface Message {
   id: string;
@@ -14,17 +12,14 @@ interface Message {
 }
 
 export const ChatInterface = () => {
-  const { user } = useAuth0();
   const [prompt, setPrompt] = useState('');
   const queryClient = useQueryClient();
 
-  // Fetch chat history
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['chatHistory'],
     queryFn: () => getChatHistory(50),
   });
 
-  // Send message mutation
   const sendMessage = useMutation({
     mutationFn: sendChatMessage,
     onSuccess: () => {
@@ -32,30 +27,6 @@ export const ChatInterface = () => {
       setPrompt('');
     },
   });
-
-  // Subscribe to real-time updates from Supabase
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('chat_messages')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['chatHistory'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

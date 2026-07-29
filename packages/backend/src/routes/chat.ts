@@ -63,7 +63,8 @@ router.get('/history', async (req: Request, res: Response) => {
 
     const history = await chatService.getChatHistory(userId, limit);
 
-    res.json(history);
+    // Normalize DynamoDB key name to what the frontend expects
+    res.json(history.map(({ messageId, ...rest }) => ({ id: messageId, ...rest })));
   } catch (error: any) {
     console.error('Chat history error:', error);
     res.status(500).json({
